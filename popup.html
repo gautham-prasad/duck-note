@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- <title>Duck Note</title> -->
+    <style>
+        body {
+            width: 300px;
+            padding: 15px;
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin-top: 0;
+            color: #333;
+        }
+
+        .container {
+            background-color: #fff176;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        button {
+            background-color: #f9a825;
+            border: none;
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #f57f17;
+        }
+
+        #close-button {
+            background-color: #ef5350;
+            color: white;
+            margin-left: 10px;
+        }
+
+        #close-button:hover {
+            background-color: #d32f2f;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        p {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+    </style>
+    <script src="popup.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Duck Note</h1>
+        <p>Your note is now active on this page. Click and drag the header to move it around.</p>
+        <p>Click the minimize button to collapse the note or the X button to remove it completely.</p>
+        <div class="buttons">
+            <button id="toggle-button">Toggle Note Visibility</button>
+            <button id="close-button">Remove Note</button>
+        </div>
+    </div>
+</body>
+
+</html>
