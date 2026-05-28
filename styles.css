@@ -101,7 +101,7 @@
     content: "" !important;
     position: absolute !important;
     left: -10px !important;
-    top: 22px !important;
+    top: 11px !important; /* Positioned left of header */
     border-top: 10px solid transparent !important;
     border-bottom: 10px solid transparent !important;
     border-right: 10px solid rgba(0, 0, 0, 0.08) !important;
@@ -113,7 +113,7 @@
     content: "" !important;
     position: absolute !important;
     left: -9px !important;
-    top: 22px !important;
+    top: 11px !important; /* Positioned left of header */
     border-top: 10px solid transparent !important;
     border-bottom: 10px solid transparent !important;
     border-right: 10px solid transparent !important;
@@ -259,10 +259,10 @@
     border-right-color: rgba(234, 179, 8, 0.3) !important;
 }
 #floating-note.theme-yellow #note-bubble:after {
-    border-right-color: rgba(254, 249, 195, 0.95) !important;
+    border-right-color: #facc15 !important; /* Matches solid yellow header */
 }
 #floating-note.theme-yellow #note-header {
-    background-color: rgba(253, 224, 71, 0.85) !important;
+    background-color: #facc15 !important; /* Solid yellow header */
     color: #854d0e !important;
 }
 #floating-note.theme-yellow #note-content {
@@ -291,10 +291,10 @@
     border-right-color: rgba(34, 197, 94, 0.3) !important;
 }
 #floating-note.theme-green #note-bubble:after {
-    border-right-color: rgba(240, 253, 244, 0.95) !important;
+    border-right-color: #86efac !important; /* Matches solid green header */
 }
 #floating-note.theme-green #note-header {
-    background-color: rgba(187, 247, 208, 0.85) !important;
+    background-color: #86efac !important; /* Solid mint green header */
     color: #166534 !important;
 }
 #floating-note.theme-green #note-content {
@@ -323,10 +323,10 @@
     border-right-color: rgba(168, 85, 247, 0.3) !important;
 }
 #floating-note.theme-purple #note-bubble:after {
-    border-right-color: rgba(250, 245, 255, 0.95) !important;
+    border-right-color: #d8b4fe !important; /* Matches solid purple header */
 }
 #floating-note.theme-purple #note-header {
-    background-color: rgba(233, 213, 255, 0.85) !important;
+    background-color: #d8b4fe !important; /* Solid lavender header */
     color: #6b21a8 !important;
 }
 #floating-note.theme-purple #note-content {
@@ -360,10 +360,10 @@
     border-right-color: rgba(71, 85, 105, 0.4) !important;
 }
 #floating-note.theme-dark #note-bubble:after {
-    border-right-color: rgba(15, 23, 42, 0.95) !important;
+    border-right-color: #1e293b !important; /* Matches solid dark header */
 }
 #floating-note.theme-dark #note-header {
-    background-color: rgba(30, 41, 59, 0.9) !important;
+    background-color: #1e293b !important; /* Solid dark slate header */
     color: #f8fafc !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
