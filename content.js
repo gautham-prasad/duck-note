@@ -11,7 +11,6 @@
     let note = null;
     let header = null;
     let textarea = null;
-    let toggleBtn = null;
     let closeBtn = null;
     let settingsBtn = null;
     let themeMenu = null;
@@ -81,7 +80,6 @@
               <span class="note-title">Duck Note</span>
               <div class="note-controls">
                 <span id="settings-btn" title="Choose Theme">⚙</span>
-                <span id="toggle-btn" title="Collapse">_</span>
                 <span id="close-btn" title="Remove Note">×</span>
               </div>
             </div>
@@ -109,7 +107,6 @@
         const noteBubble = document.getElementById('note-bubble');
         header = document.getElementById('note-header');
         textarea = document.getElementById('note-content');
-        toggleBtn = document.getElementById('toggle-btn');
         closeBtn = document.getElementById('close-btn');
         settingsBtn = document.getElementById('settings-btn');
         themeMenu = document.getElementById('theme-menu');
@@ -118,12 +115,8 @@
         function updateToggleUI() {
             if (isNoteVisible) {
                 noteBubble.style.display = 'flex';
-                toggleBtn.textContent = '_';
-                toggleBtn.title = "Collapse";
             } else {
                 noteBubble.style.display = 'none';
-                toggleBtn.textContent = '▢';
-                toggleBtn.title = "Expand";
             }
 
             // Save visibility state
@@ -142,12 +135,6 @@
 
         // Action listeners
         duckIcon.onclick = function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            toggleNote();
-        };
-
-        toggleBtn.onclick = function (event) {
             event.preventDefault();
             event.stopPropagation();
             toggleNote();
@@ -258,7 +245,7 @@
         // Drag and drop implementation
         function handleMouseDown(e) {
             // Skip dragging if user clicked on button controls or textarea
-            if (e.target === toggleBtn || e.target === closeBtn || e.target === settingsBtn || e.target === textarea || e.target.classList.contains('theme-option')) {
+            if (e.target === closeBtn || e.target === settingsBtn || e.target === textarea || e.target.classList.contains('theme-option')) {
                 return;
             }
 
@@ -323,7 +310,7 @@
 
         // Mobile Touch Drag implementation
         touchStartHandler = (e) => {
-            if (e.target === toggleBtn || e.target === closeBtn || e.target === settingsBtn || e.target === textarea || e.target.classList.contains('theme-option')) {
+            if (e.target === closeBtn || e.target === settingsBtn || e.target === textarea || e.target.classList.contains('theme-option')) {
                 return;
             }
 
@@ -395,7 +382,6 @@
                 note = null;
                 header = null;
                 textarea = null;
-                toggleBtn = null;
                 closeBtn = null;
                 settingsBtn = null;
                 themeMenu = null;
