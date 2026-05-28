@@ -1,497 +1,478 @@
-// Global flag to track if we've already initialized
-// Use window property instead of let to avoid duplicate declaration errors
-if (typeof window.duckNoteInitialized === 'undefined') {
-    window.duckNoteInitialized = false;
-
-    // Check if we're on a valid page (not chrome:// or other restricted URLs)
-    if (!window.location.protocol.startsWith('chrome') &&
-        !window.location.protocol.startsWith('about') &&
-        !window.location.protocol.startsWith('data')) {
-
-        // Wait for DOM to be fully loaded
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initOnce);
-        } else {
-            // Small delay to ensure the page is ready
-            setTimeout(initOnce, 100);
-        }
+(function () {
+    // Global safety guard to prevent duplicate initialization
+    if (window.duckNoteInitialized) {
+        console.log("Duck Note: Already initialized in this page context.");
+        return;
     }
-}
+    window.duckNoteInitialized = true;
 
-// Global variables to access across functions
-let container, note, header, textarea, toggleBtn, closeBtn;
-let mouseMoveHandler, mouseUpHandler, touchStartHandler, touchMoveHandler, touchEndHandler;
-
-// Only initialize once
-function initOnce() {
-    if (window.duckNoteInitialized) return;
-
-    try {
-        initializeStickyNote();
-        window.duckNoteInitialized = true;
-        console.log("Duck Note: Successfully initialized");
-    } catch (error) {
-        console.error("Duck Note: Initialization failed", error);
-    }
-}
-
-function initializeStickyNote() {
-    console.log("Duck Note: Initializing");
-
-    // Clean up any existing notes first
-    const existingContainer = document.getElementById('sticky-note-container');
-    if (existingContainer) {
-        try {
-            existingContainer.parentNode.removeChild(existingContainer);
-            console.log("Duck Note: Removed existing note");
-        } catch (e) {
-            console.error("Failed to remove existing note:", e);
-        }
-    }
-
-    // Create the container
-    container = document.createElement('div');
-    container.id = 'sticky-note-container';
-
-    // Set container styles directly
-    Object.assign(container.style, {
-        all: 'initial',
-        position: 'absolute',
-        top: '0',
-        left: '0',
-        zIndex: '2147483647', // Maximum z-index
-        width: '0',
-        height: '0',
-        margin: '0',
-        padding: '0',
-        border: 'none',
-        background: 'transparent',
-        pointerEvents: 'none'
-    });
-
-    // Create note container
-    note = document.createElement('div');
-    note.id = 'floating-note';
-
-    // Set HTML content with duck icon
-    note.innerHTML = `
-      <div id="duck-container">
-        <img id="duck-icon" src="${chrome.runtime.getURL('icon.png')}" alt="Duck Icon">
-      </div>
-      <div id="note-bubble">
-        <div id="note-header">
-          Duck Note
-          <div class="note-controls">
-            <span id="toggle-btn">_</span>
-            <span id="close-btn">×</span>
-          </div>
-        </div>
-        <textarea id="note-content" placeholder="Type your note here..."></textarea>
-      </div>
-    `;
-
-    // Initially hide the note to prevent flicker
-    note.style.display = 'none';
-
-    // Add note to container, then add container to body
-    container.appendChild(note);
-    document.body.appendChild(container);
-
-    console.log("Duck Note: Note created and appended");
-
-    // Get references to elements
-    const duckContainer = document.getElementById('duck-container');
-    const duckIcon = document.getElementById('duck-icon');
-    const noteBubble = document.getElementById('note-bubble');
-    header = document.getElementById('note-header');
-    textarea = document.getElementById('note-content');
-    toggleBtn = document.getElementById('toggle-btn');
-    closeBtn = document.getElementById('close-btn');
-
-    // Note pointerEvents to auto so it can be interacted with
-    note.style.pointerEvents = 'auto';
-
-    // Track toggle state explicitly with a variable
+    // Global elements
+    let container = null;
+    let note = null;
+    let header = null;
+    let textarea = null;
+    let toggleBtn = null;
+    let closeBtn = null;
+    let settingsBtn = null;
+    let themeMenu = null;
     let isNoteVisible = true; // Default to visible
+    let currentTheme = 'yellow'; // Default theme
 
-    // Function to update UI based on toggle state
-    function updateToggleUI() {
-        // Update UI based on current toggle state
-        if (isNoteVisible) {
-            noteBubble.style.display = 'block';
-            toggleBtn.textContent = '_';
-            console.log("Note shown - toggle state:", isNoteVisible);
-        } else {
-            noteBubble.style.display = 'none';
-            toggleBtn.textContent = '▢';
-            console.log("Note hidden - toggle state:", isNoteVisible);
+    // Dragging state
+    let isDragging = false;
+    let offsetX = 0, offsetY = 0;
+    let initialLeft = 0, initialTop = 0;
+    let dragStartX = 0, dragStartY = 0;
+
+    // Event listeners references for cleanup
+    let mouseMoveHandler = null;
+    let mouseUpHandler = null;
+    let touchStartHandler = null;
+    let touchMoveHandler = null;
+    let touchEndHandler = null;
+
+    // Initialize sticky note
+    function initializeStickyNote() {
+        console.log("Duck Note: Initializing elements");
+
+        // Clean up any existing notes
+        const existingContainer = document.getElementById('sticky-note-container');
+        if (existingContainer) {
+            try {
+                existingContainer.parentNode.removeChild(existingContainer);
+                console.log("Duck Note: Cleaned up pre-existing elements");
+            } catch (e) {
+                console.error("Failed to remove existing note container:", e);
+            }
         }
 
-        // Save state to Chrome storage
+        // Create the container
+        container = document.createElement('div');
+        container.id = 'sticky-note-container';
+
+        // Set container styles
+        Object.assign(container.style, {
+            all: 'initial',
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            zIndex: '2147483647', // Max z-index
+            width: '0',
+            height: '0',
+            margin: '0',
+            padding: '0',
+            border: 'none',
+            background: 'transparent',
+            pointerEvents: 'none'
+        });
+
+        // Create note wrapper
+        note = document.createElement('div');
+        note.id = 'floating-note';
+        note.className = 'theme-yellow'; // Initial theme class
+
+        // Render HTML content
+        note.innerHTML = `
+          <div id="duck-container">
+            <img id="duck-icon" src="${chrome.runtime.getURL('icons/icon-128.png')}" alt="Duck Icon">
+          </div>
+          <div id="note-bubble">
+            <div id="note-header">
+              <span class="note-title">Duck Note</span>
+              <div class="note-controls">
+                <span id="settings-btn" title="Choose Theme">⚙</span>
+                <span id="toggle-btn" title="Collapse">_</span>
+                <span id="close-btn" title="Remove Note">×</span>
+              </div>
+            </div>
+            <div id="theme-menu">
+              <span class="theme-option yellow" data-theme="yellow" title="Classic Yellow"></span>
+              <span class="theme-option green" data-theme="green" title="Mint Green"></span>
+              <span class="theme-option purple" data-theme="purple" title="Lavender Purple"></span>
+              <span class="theme-option dark" data-theme="dark" title="Slate Dark"></span>
+            </div>
+            <textarea id="note-content" placeholder="Type your note here..."></textarea>
+          </div>
+        `;
+
+        // Initially hide the note to prevent layout flickering while loading settings
+        note.style.display = 'none';
+        note.style.pointerEvents = 'auto';
+
+        // Append to body
+        container.appendChild(note);
+        document.body.appendChild(container);
+
+        // Get references to elements
+        const duckContainer = document.getElementById('duck-container');
+        const duckIcon = document.getElementById('duck-icon');
+        const noteBubble = document.getElementById('note-bubble');
+        header = document.getElementById('note-header');
+        textarea = document.getElementById('note-content');
+        toggleBtn = document.getElementById('toggle-btn');
+        closeBtn = document.getElementById('close-btn');
+        settingsBtn = document.getElementById('settings-btn');
+        themeMenu = document.getElementById('theme-menu');
+
+        // Function to update UI based on visibility state
+        function updateToggleUI() {
+            if (isNoteVisible) {
+                noteBubble.style.display = 'flex';
+                toggleBtn.textContent = '_';
+                toggleBtn.title = "Collapse";
+            } else {
+                noteBubble.style.display = 'none';
+                toggleBtn.textContent = '▢';
+                toggleBtn.title = "Expand";
+            }
+
+            // Save visibility state
+            try {
+                chrome.storage.sync.set({ noteVisible: isNoteVisible });
+            } catch (e) {
+                console.warn("Could not save visibility state:", e);
+            }
+        }
+
+        // Toggle visibility action
+        function toggleNote() {
+            isNoteVisible = !isNoteVisible;
+            updateToggleUI();
+        }
+
+        // Action listeners
+        duckIcon.onclick = function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleNote();
+        };
+
+        toggleBtn.onclick = function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleNote();
+        };
+
+        // Theme switching logic
+        settingsBtn.onclick = function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            themeMenu.classList.toggle('active');
+        };
+
+        // Handle click outside theme menu to close it
+        document.addEventListener('click', function (event) {
+            if (themeMenu && themeMenu.classList.contains('active')) {
+                if (!themeMenu.contains(event.target) && event.target !== settingsBtn) {
+                    themeMenu.classList.remove('active');
+                }
+            }
+        });
+
+        // Add event listeners to theme option circles
+        const themeOptions = themeMenu.querySelectorAll('.theme-option');
+        themeOptions.forEach(option => {
+            option.onclick = function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const selectedTheme = this.getAttribute('data-theme');
+                applyTheme(selectedTheme);
+                
+                // Save theme choice
+                try {
+                    chrome.storage.sync.set({ noteTheme: selectedTheme });
+                } catch (e) {
+                    console.warn("Could not save theme preference:", e);
+                }
+
+                // Close theme menu
+                themeMenu.classList.remove('active');
+            };
+        });
+
+        // Function to apply a specific theme class
+        function applyTheme(themeName) {
+            if (!note) return;
+            // Remove previous theme classes
+            note.classList.remove('theme-yellow', 'theme-green', 'theme-purple', 'theme-dark');
+            // Add new theme class
+            note.classList.add(`theme-${themeName}`);
+            currentTheme = themeName;
+        }
+
+        // Load settings from Chrome sync storage
         try {
-            chrome.storage.sync.set({ noteVisible: isNoteVisible }, function () {
-                console.log("Toggle state saved:", isNoteVisible);
+            chrome.storage.sync.get(['notePositionX', 'notePositionY', 'noteVisible', 'stickyNote', 'noteTheme'], function (data) {
+                // Restore theme
+                if (data.noteTheme) {
+                    applyTheme(data.noteTheme);
+                } else {
+                    applyTheme('yellow');
+                }
+
+                // Restore note position
+                if (data.notePositionX !== undefined && data.notePositionY !== undefined) {
+                    note.style.left = data.notePositionX + 'px';
+                    note.style.top = data.notePositionY + 'px';
+                    note.style.right = 'auto';
+                    note.classList.add('manual-position');
+                } else {
+                    // Default position (upper-right)
+                    note.style.top = '25px';
+                    note.style.right = '25px';
+                }
+
+                // Restore visibility state
+                if (data.noteVisible !== undefined) {
+                    isNoteVisible = data.noteVisible;
+                }
+                updateToggleUI();
+
+                // Restore text content
+                if (data.stickyNote) {
+                    textarea.value = data.stickyNote;
+                }
+
+                // Display note after settings are loaded
+                note.style.display = 'flex';
             });
         } catch (e) {
-            console.warn("Could not save visibility state:", e);
-        }
-    }
-
-    // Toggle function that flips the state variable
-    function toggleNote() {
-        console.log("Toggle called, current state:", isNoteVisible);
-        isNoteVisible = !isNoteVisible; // Flip the state
-        updateToggleUI(); // Update UI based on new state
-    }
-
-    // Simple duck click handler - uses the toggle function
-    duckIcon.onclick = function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        console.log("Duck clicked!");
-        toggleNote();
-    };
-
-    // Simple toggle button handler - uses the same toggle function
-    toggleBtn.onclick = function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        console.log("Toggle button clicked!");
-        toggleNote();
-    };
-
-    // Position the note and load settings
-    try {
-        chrome.storage.sync.get(['notePositionX', 'notePositionY', 'noteVisible', 'stickyNote'], function (data) {
-            // Load note position if available
-            if (data.notePositionX !== undefined && data.notePositionY !== undefined) {
-                note.style.left = data.notePositionX + 'px';
-                note.style.top = data.notePositionY + 'px';
-                note.style.right = 'auto';
-                note.classList.add('manual-position');
-                console.log("Duck Note: Position restored from storage");
-            } else {
-                // Default position in upper right corner
-                note.style.top = '20px';
-                note.style.right = '20px';
-                console.log("Duck Note: Using default position");
-            }
-
-            // Load visibility state from storage - with explicit check
-            if (data.noteVisible !== undefined) {
-                isNoteVisible = data.noteVisible;
-                console.log("Loaded visibility state:", isNoteVisible);
-            }
-
-            // Apply the loaded visibility state
-            updateToggleUI();
-
-            // Load note content
-            if (data.stickyNote) {
-                textarea.value = data.stickyNote;
-            }
-
-            // Show the note after loading settings
+            console.error("Failed to load note settings:", e);
+            applyTheme('yellow');
+            note.style.top = '25px';
+            note.style.right = '25px';
             note.style.display = 'flex';
-        });
-    } catch (e) {
-        console.error("Failed to load note settings:", e);
-        // Default fallback position
-        note.style.top = '20px';
-        note.style.right = '20px';
-        note.style.display = 'flex';
+            updateToggleUI();
+        }
 
-        // Apply default visibility state
-        updateToggleUI();
-    }
-
-    // Save note content on change
-    textarea.addEventListener('input', () => {
-        try {
-            // Wrap in try-catch to handle possible connection errors
+        // Save note content on input change
+        textarea.addEventListener('input', () => {
             try {
                 chrome.storage.sync.set({ stickyNote: textarea.value });
             } catch (storageError) {
-                console.warn("Could not save note content:", storageError);
+                console.warn("Could not save note text content:", storageError);
             }
-        } catch (e) {
-            console.error("Error saving note content:", e);
+        });
+
+        // Drag and drop implementation
+        function handleMouseDown(e) {
+            // Skip dragging if user clicked on button controls or textarea
+            if (e.target === toggleBtn || e.target === closeBtn || e.target === settingsBtn || e.target === textarea || e.target.classList.contains('theme-option')) {
+                return;
+            }
+
+            isDragging = true;
+
+            const rect = note.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+
+            initialLeft = rect.left;
+            initialTop = rect.top;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+
+            // Visual feedback
+            document.body.style.cursor = 'grabbing';
+            note.classList.add('dragging');
+            note.classList.add('manual-position');
+            note.style.right = 'auto';
+
+            e.preventDefault();
         }
-    });
 
-    // IMPROVED DRAG AND DROP
-    let isDragging = false;
-    let offsetX, offsetY;
-    let initialLeft, initialTop, dragStartX, dragStartY;
+        function handleMouseMove(e) {
+            if (!isDragging) return;
 
-    function handleMouseDown(e) {
-        // Skip if clicking on buttons or textarea
-        if (e.target === toggleBtn || e.target === closeBtn || e.target === textarea) {
-            return;
+            // Update position based on pointer coordinates and offset
+            note.style.left = (e.clientX - offsetX) + 'px';
+            note.style.top = (e.clientY - offsetY) + 'px';
+
+            e.preventDefault();
         }
 
-        isDragging = true;
+        function handleMouseUp() {
+            if (!isDragging) return;
 
-        // Calculate the offset from the pointer to the top-left of the note
-        const rect = note.getBoundingClientRect();
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
+            isDragging = false;
+            document.body.style.cursor = '';
+            note.classList.remove('dragging');
 
-        // Store initial position for potential calculations
-        initialLeft = rect.left;
-        initialTop = rect.top;
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
-
-        // Visual feedback
-        document.body.style.cursor = 'grabbing';
-        note.classList.add('dragging');
-
-        // Ensure the note is in manual position mode
-        note.classList.add('manual-position');
-        note.style.right = 'auto';
-
-        e.preventDefault();
-    }
-
-    function handleMouseMove(e) {
-        if (!isDragging) return;
-
-        // Apply new position
-        note.style.left = (e.clientX - offsetX) + 'px';
-        note.style.top = (e.clientY - offsetY) + 'px';
-
-        e.preventDefault();
-    }
-
-    function handleMouseUp() {
-        if (!isDragging) return;
-
-        isDragging = false;
-
-        // Reset cursor and visual feedback
-        document.body.style.cursor = '';
-        note.classList.remove('dragging');
-
-        // Save the position
-        const rect = note.getBoundingClientRect();
-        try {
-            // Wrap in try-catch to handle possible connection errors
+            // Save new position
+            const rect = note.getBoundingClientRect();
             try {
                 chrome.storage.sync.set({
                     notePositionX: rect.left,
                     notePositionY: rect.top
                 });
-                console.log("Position saved:", rect.left, rect.top);
+                console.log("Position saved successfully:", rect.left, rect.top);
             } catch (storageError) {
-                console.warn("Could not save position:", storageError);
+                console.warn("Could not save drag position:", storageError);
             }
-        } catch (e) {
-            console.error("Failed to save position:", e);
-        }
-    }
-
-    // Attach mouse events for dragging
-    duckContainer.addEventListener('mousedown', handleMouseDown);
-    header.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    // Close function to completely remove the note
-    function closeNote() {
-        try {
-            // Remove event listeners first (before elements become null)
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-            document.removeEventListener('touchmove', touchMoveHandler);
-            document.removeEventListener('touchend', touchEndHandler);
-
-            // Now remove element-specific event listeners with null checks
-            if (header) {
-                header.removeEventListener('mousedown', handleMouseDown);
-                header.removeEventListener('touchstart', touchStartHandler);
-            }
-
-            if (duckContainer) {
-                duckContainer.removeEventListener('mousedown', handleMouseDown);
-                duckContainer.removeEventListener('touchstart', touchStartHandler);
-            }
-
-            // Remove the container from DOM
-            if (container && container.parentNode) {
-                container.parentNode.removeChild(container);
-            }
-
-            // Reset global variables
-            container = null;
-            note = null;
-            header = null;
-            textarea = null;
-            toggleBtn = null;
-            closeBtn = null;
-
-            // Reset initialized flag so note can be recreated
-            window.duckNoteInitialized = false;
-
-            console.log("Duck Note: Note closed and removed");
-        } catch (e) {
-            console.error("Error closing note:", e);
-        }
-    }
-
-    // Button event listeners - FIXED DUPLICATE ISSUE
-    // NOTE: We now use direct onclick handlers instead of addEventListener
-    closeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        closeNote();
-    });
-
-    // Also handle touch events for mobile
-    touchStartHandler = (e) => {
-        // Skip if touching buttons or textarea
-        if (e.target === toggleBtn || e.target === closeBtn || e.target === textarea) {
-            return;
         }
 
-        const touch = e.touches[0];
-        isDragging = true;
+        // Mouse Drag event listeners
+        mouseMoveHandler = handleMouseMove;
+        mouseUpHandler = handleMouseUp;
 
-        // Get current position
-        const rect = note.getBoundingClientRect();
-        initialLeft = rect.left;
-        initialTop = rect.top;
+        duckContainer.addEventListener('mousedown', handleMouseDown);
+        header.addEventListener('mousedown', handleMouseDown);
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
 
-        // Calculate the offset from the pointer to the top-left of the note
-        offsetX = touch.clientX - rect.left;
-        offsetY = touch.clientY - rect.top;
+        // Mobile Touch Drag implementation
+        touchStartHandler = (e) => {
+            if (e.target === toggleBtn || e.target === closeBtn || e.target === settingsBtn || e.target === textarea || e.target.classList.contains('theme-option')) {
+                return;
+            }
 
-        // Get touch start position
-        dragStartX = touch.clientX;
-        dragStartY = touch.clientY;
+            const touch = e.touches[0];
+            isDragging = true;
 
-        // Visual feedback
-        note.classList.add('dragging');
-        header.style.cursor = 'grabbing';
+            const rect = note.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+            offsetX = touch.clientX - rect.left;
+            offsetY = touch.clientY - rect.top;
+            dragStartX = touch.clientX;
+            dragStartY = touch.clientY;
 
-        // Ensure the note is in manual position mode
-        note.classList.add('manual-position');
-        note.style.right = 'auto';
+            note.classList.add('dragging');
+            note.classList.add('manual-position');
+            note.style.right = 'auto';
 
-        // Prevent default to avoid scrolling
-        e.preventDefault();
-    };
+            e.preventDefault();
+        };
 
-    touchMoveHandler = (e) => {
-        if (!isDragging) return;
+        touchMoveHandler = (e) => {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            note.style.left = (touch.clientX - offsetX) + 'px';
+            note.style.top = (touch.clientY - offsetY) + 'px';
+            e.preventDefault();
+        };
 
-        const touch = e.touches[0];
+        touchEndHandler = (e) => {
+            if (!isDragging) return;
 
-        // Apply new position directly using offset approach (more consistent with mouse behavior)
-        note.style.left = (touch.clientX - offsetX) + 'px';
-        note.style.top = (touch.clientY - offsetY) + 'px';
+            isDragging = false;
+            note.classList.remove('dragging');
 
-        // Prevent scrolling
-        e.preventDefault();
-    };
-
-    touchEndHandler = (e) => {
-        if (!isDragging) return;
-
-        isDragging = false;
-
-        // Reset cursor and visual feedback
-        header.style.cursor = 'move';
-        note.classList.remove('dragging');
-
-        // Save the position
-        const rect = note.getBoundingClientRect();
-        try {
-            // Wrap in try-catch to handle possible connection errors
+            const rect = note.getBoundingClientRect();
             try {
                 chrome.storage.sync.set({
                     notePositionX: rect.left,
                     notePositionY: rect.top
                 });
-                console.log("Position saved:", rect.left, rect.top);
-            } catch (storageError) {
-                console.warn("Could not save position:", storageError);
+            } catch (err) {
+                console.warn("Failed to save mobile touch position:", err);
             }
-        } catch (err) {
-            console.error("Failed to save position:", err);
+        };
+
+        // Touch drag event listeners
+        duckContainer.addEventListener('touchstart', touchStartHandler, { passive: false });
+        header.addEventListener('touchstart', touchStartHandler, { passive: false });
+        document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+        document.addEventListener('touchend', touchEndHandler);
+
+        // Remove element completely
+        function closeNote() {
+            try {
+                // Remove document event listeners
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+                document.removeEventListener('touchmove', touchMoveHandler);
+                document.removeEventListener('touchend', touchEndHandler);
+
+                // Clean up DOM elements
+                if (container && container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
+
+                // Reset references
+                container = null;
+                note = null;
+                header = null;
+                textarea = null;
+                toggleBtn = null;
+                closeBtn = null;
+                settingsBtn = null;
+                themeMenu = null;
+
+                // Reset initialization flag
+                window.duckNoteInitialized = false;
+                console.log("Duck Note: Note closed and removed from DOM");
+            } catch (e) {
+                console.error("Error closing note:", e);
+            }
         }
-    };
 
-    // Add touch event listeners
-    duckContainer.addEventListener('touchstart', touchStartHandler, { passive: false });
-    header.addEventListener('touchstart', touchStartHandler, { passive: false });
-    document.addEventListener('touchmove', touchMoveHandler, { passive: false });
-    document.addEventListener('touchend', touchEndHandler);
-}
+        // Close button click handler
+        closeBtn.onclick = function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeNote();
+        };
+        
+        // Expose closeNote function to outer scope via return or binding
+        window.closeDuckNote = closeNote;
+        window.toggleDuckNote = toggleNote;
+    }
 
-// Listen for messages from the background script
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log("Duck Note: Received message", message);
+    // Run initialization
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeStickyNote);
+    } else {
+        // Small delay to prevent issues with slow-loading DOM elements
+        setTimeout(initializeStickyNote, 100);
+    }
 
-    // Make sure we're initialized
-    if (!window.duckNoteInitialized) {
-        try {
-            initOnce();
-        } catch (error) {
-            console.error("Failed to initialize on message:", error);
-            sendResponse({ status: "error", message: "Failed to initialize" });
+    // Listen for messages from background script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        console.log("Duck Note Content: Received message", message);
+
+        if (message.action === "ping") {
+            sendResponse({ status: "ok" });
             return true;
         }
-    }
 
-    // Handle message actions
-    if (message.action === "toggle") {
+        // Ensure notes are initialized if they somehow got destroyed or closed
+        if (!container && message.action !== "ping") {
+            initializeStickyNote();
+            // Wait slightly for DOM creation
+            setTimeout(() => {
+                handleMessageAction(message, sendResponse);
+            }, 150);
+            return true;
+        }
+
+        handleMessageAction(message, sendResponse);
+        return true;
+    });
+
+    function handleMessageAction(message, sendResponse) {
         try {
-            // Find the elements again in case they were removed
-            const noteBubble = document.getElementById('note-bubble');
-            const toggleBtn = document.getElementById('toggle-btn');
-
-            if (noteBubble && toggleBtn) {
-                if (noteBubble.style.display === 'none') {
-                    noteBubble.style.display = 'flex';
-                    toggleBtn.textContent = '_';
-                    chrome.storage.sync.set({ noteVisible: true });
+            if (message.action === "toggle") {
+                if (window.toggleDuckNote) {
+                    window.toggleDuckNote();
+                    sendResponse({ status: "ok" });
                 } else {
-                    noteBubble.style.display = 'none';
-                    toggleBtn.textContent = '▢';
-                    chrome.storage.sync.set({ noteVisible: false });
+                    sendResponse({ status: "error", message: "Toggle function not bound" });
                 }
-                sendResponse({ status: "ok" });
-            } else {
-                // Elements not found, try to re-initialize
-                initOnce();
-                sendResponse({ status: "reinitialized" });
+            } else if (message.action === "close") {
+                if (window.closeDuckNote) {
+                    window.closeDuckNote();
+                    // Clear sync storage settings to reset
+                    chrome.storage.sync.remove(['notePositionX', 'notePositionY', 'noteVisible', 'stickyNote', 'noteTheme']);
+                    sendResponse({ status: "ok" });
+                } else {
+                    sendResponse({ status: "error", message: "Close function not bound" });
+                }
             }
         } catch (e) {
-            console.error("Error handling toggle message:", e);
-            sendResponse({ status: "error", message: e.toString() });
-        }
-    } else if (message.action === "ping") {
-        sendResponse({ status: "ok" });
-    } else if (message.action === "close") {
-        try {
-            const container = document.getElementById('sticky-note-container');
-            if (container && container.parentNode) {
-                container.parentNode.removeChild(container);
-            }
-
-            // Clear all saved data
-            chrome.storage.sync.remove(['notePositionX', 'notePositionY', 'noteVisible', 'stickyNote']);
-
-            // Reset initialization flag
-            window.duckNoteInitialized = false;
-
-            sendResponse({ status: "ok" });
-        } catch (e) {
-            console.error("Error handling close message:", e);
+            console.error("Error in message handler:", e);
             sendResponse({ status: "error", message: e.toString() });
         }
     }
-
-    return true; // Keep message channel open for async response
-}); 
+})();
