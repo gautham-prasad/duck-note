@@ -1,11 +1,16 @@
-/* Reset styles to prevent interference with the page */
+/* ----------------------------------------------------
+   Duck Note Stylesheet
+   Premium Glassmorphism & Custom Themes
+---------------------------------------------------- */
+
+/* Core note container reset & configuration */
 #floating-note {
     all: initial;
     position: fixed !important;
     width: auto !important;
     height: auto !important;
     z-index: 2147483647 !important;
-    font-family: Arial, sans-serif !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
     font-size: 14px !important;
     box-sizing: border-box !important;
     margin: 0 !important;
@@ -15,184 +20,387 @@
     align-items: flex-start !important;
     pointer-events: auto !important;
     user-select: none !important;
-    transition: transform 0.1s ease !important;
-    /* Smooth transition for drag feedback */
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
 }
 
-/* Enhanced drag state */
+#floating-note * {
+    box-sizing: border-box !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* Enhanced drag and drop state feedback */
 #floating-note.dragging {
-    transform: scale(1.02) !important;
-    /* Slightly larger when dragging */
-    opacity: 0.9 !important;
+    transform: scale(1.03) !important;
+    opacity: 0.95 !important;
     cursor: grabbing !important;
     transition: transform 0.05s ease, opacity 0.05s ease !important;
 }
 
-/* Duck icon styling */
+#floating-note.manual-position {
+    right: auto !important;
+    position: fixed !important;
+    margin: 0 !important;
+    transition: none !important; /* Disables transitions during drag to ensure no lag */
+    will-change: left, top !important;
+}
+
+/* Duck icon container styling */
 #duck-container {
-    width: 60px !important;
-    height: 60px !important;
-    cursor: move !important;
+    width: 64px !important;
+    height: 64px !important;
+    cursor: grab !important;
     z-index: 2147483647 !important;
-    margin-right: 10px !important;
+    margin-right: 14px !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
     background: transparent !important;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15)) !important;
+    transition: filter 0.2s ease !important;
+}
+
+#duck-container:active {
+    cursor: grabbing !important;
 }
 
 #duck-icon {
     width: 100% !important;
     height: 100% !important;
     object-fit: contain !important;
-    transform: scaleX(-1) !important;
-    /* Flip horizontally */
+    transform: scaleX(-1) !important; /* Flip duck to face right (pointing to speech bubble) */
     cursor: pointer !important;
-    transition: transform 0.2s ease !important;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
-#duck-icon:hover {
-    transform: scaleX(-1) scale(1.1) !important;
-    /* Add hover effect */
+#duck-container:hover #duck-icon {
+    transform: scaleX(-1) scale(1.12) rotate(4deg) !important;
 }
 
-/* Note bubble styling */
+/* Speech Bubble Card Container */
 #note-bubble {
-    display: block !important;
+    display: flex !important;
     flex-direction: column !important;
-    width: 250px !important;
-    background-color: #fef9c3 !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5) !important;
-    border-radius: 8px !important;
-    border: 2px solid #e5b800 !important;
+    width: 270px !important;
+    border-radius: 14px !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
     position: relative !important;
-    min-height: 100px !important;
+    min-height: 120px !important;
+    box-shadow: 
+        0 10px 25px -5px rgba(0, 0, 0, 0.15), 
+        0 8px 10px -6px rgba(0, 0, 0, 0.1),
+        0 1px 3px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    overflow: visible !important;
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
-/* Speech bubble arrow */
+/* Speech bubble arrow pseudo-elements */
 #note-bubble:before {
     content: "" !important;
     position: absolute !important;
     left: -10px !important;
-    top: 20px !important;
+    top: 22px !important;
     border-top: 10px solid transparent !important;
     border-bottom: 10px solid transparent !important;
-    border-right: 10px solid #e5b800 !important;
+    border-right: 10px solid rgba(0, 0, 0, 0.08) !important;
+    z-index: -1 !important;
+    transition: border-right-color 0.3s ease !important;
 }
 
-/* Fix position override if manually positioned */
-#floating-note.manual-position {
-    right: auto !important;
-    position: fixed !important;
-    margin: 0 !important;
-    /* No transitions during drag */
-    transition: none !important;
-    /* Ensure dragging works smoothly */
-    will-change: left, top !important;
+#note-bubble:after {
+    content: "" !important;
+    position: absolute !important;
+    left: -9px !important;
+    top: 22px !important;
+    border-top: 10px solid transparent !important;
+    border-bottom: 10px solid transparent !important;
+    border-right: 10px solid transparent !important;
+    z-index: 1 !important;
+    transition: border-right-color 0.3s ease !important;
 }
 
-#floating-note * {
-    box-sizing: border-box !important;
-    font-family: Arial, sans-serif !important;
-}
-
+/* Header bar inside sticky note */
 #note-header {
     all: initial;
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    background-color: #facc15 !important;
-    padding: 10px !important;
+    padding: 12px 14px !important;
     cursor: move !important;
-    /* Show move cursor */
-    border-radius: 8px 8px 0 0 !important;
+    border-radius: 13px 13px 0 0 !important;
     user-select: none !important;
-    font-weight: bold !important;
-    font-size: 16px !important;
-    color: #333 !important;
-    font-family: Arial, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    font-family: system-ui, -apple-system, sans-serif !important;
     touch-action: none !important;
-    /* Prevents default touch actions during drag */
-    height: 40px !important;
-    min-height: 40px !important;
+    height: 42px !important;
+    transition: background-color 0.3s ease, color 0.3s ease !important;
 }
 
+.note-title {
+    font-weight: 700 !important;
+    letter-spacing: -0.01em !important;
+}
+
+/* Action button controls container */
 .note-controls {
     display: flex !important;
     align-items: center !important;
+    gap: 6px !important;
 }
 
-#toggle-btn {
+.note-controls span {
     cursor: pointer !important;
-    display: inline-block !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
     font-weight: bold !important;
-    width: 24px !important;
-    height: 24px !important;
-    text-align: center !important;
-    background-color: #f57f17 !important;
-    border-radius: 4px !important;
-    line-height: 24px !important;
-    margin-left: 8px !important;
-    color: #fff !important;
+    transition: background-color 0.2s ease, transform 0.1s ease !important;
+    user-select: none !important;
 }
 
-#close-btn {
-    cursor: pointer !important;
-    display: inline-block !important;
-    font-weight: bold !important;
-    width: 24px !important;
-    height: 24px !important;
-    text-align: center !important;
-    background-color: #ef5350 !important;
-    border-radius: 4px !important;
-    line-height: 24px !important;
-    margin-left: 8px !important;
-    color: #fff !important;
+.note-controls span:hover {
+    transform: scale(1.08) !important;
 }
 
+.note-controls span:active {
+    transform: scale(0.95) !important;
+}
+
+#settings-btn {
+    font-size: 12px !important;
+}
+
+/* Textarea input styling */
 #note-content {
     all: initial;
     width: 100% !important;
-    height: 150px !important;
-    padding: 10px !important;
+    height: 160px !important;
+    padding: 12px 14px !important;
     border: none !important;
     resize: none !important;
     box-sizing: border-box !important;
     outline: none !important;
     background-color: transparent !important;
-    font-family: Arial, sans-serif !important;
+    font-family: system-ui, -apple-system, sans-serif !important;
     font-size: 14px !important;
-    color: #333 !important;
+    line-height: 1.5 !important;
     margin: 0 !important;
+    transition: color 0.3s ease !important;
 
-    /* Custom scrollbar styling */
+    /* Custom scrollbar config */
     scrollbar-width: thin !important;
-    /* Firefox */
-    scrollbar-color: #e5b800 #fff5c0 !important;
-    /* Firefox */
 }
 
-/* WebKit (Chrome, Safari, Edge) scrollbar styling */
+/* Custom theme settings overlay */
+#theme-menu {
+    display: flex !important;
+    position: absolute !important;
+    top: 42px !important;
+    left: 0 !important;
+    width: 100% !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+    padding: 10px 14px !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    z-index: 100 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important;
+    opacity: 0 !important;
+    transform: translateY(-8px) !important;
+    pointer-events: none !important;
+    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#theme-menu.active {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    pointer-events: auto !important;
+}
+
+/* Theme Circle Selectors */
+.theme-option {
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    border: 2px solid #ffffff !important;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.15) !important;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease !important;
+}
+
+.theme-option:hover {
+    transform: scale(1.25) !important;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.3), 0 3px 6px rgba(0,0,0,0.1) !important;
+}
+
+.theme-option.yellow { background-color: #fde047 !important; }
+.theme-option.green { background-color: #86efac !important; }
+.theme-option.purple { background-color: #d8b4fe !important; }
+.theme-option.dark { background-color: #334155 !important; }
+
+
+/* ----------------------------------------------------
+   Theme Definitions
+---------------------------------------------------- */
+
+/* 1. Classic Yellow */
+#floating-note.theme-yellow #note-bubble {
+    background-color: rgba(254, 249, 195, 0.88) !important;
+    border-color: rgba(234, 179, 8, 0.3) !important;
+}
+#floating-note.theme-yellow #note-bubble:before {
+    border-right-color: rgba(234, 179, 8, 0.3) !important;
+}
+#floating-note.theme-yellow #note-bubble:after {
+    border-right-color: rgba(254, 249, 195, 0.95) !important;
+}
+#floating-note.theme-yellow #note-header {
+    background-color: rgba(253, 224, 71, 0.85) !important;
+    color: #854d0e !important;
+}
+#floating-note.theme-yellow #note-content {
+    color: #422006 !important;
+    scrollbar-color: #eab308 rgba(254, 249, 195, 0.5) !important;
+}
+#floating-note.theme-yellow #note-content::-webkit-scrollbar-thumb {
+    background-color: rgba(234, 179, 8, 0.6) !important;
+}
+#floating-note.theme-yellow #note-content::-webkit-scrollbar-track {
+    background: rgba(254, 249, 195, 0.3) !important;
+}
+#floating-note.theme-yellow .note-controls span {
+    color: #854d0e !important;
+}
+#floating-note.theme-yellow .note-controls span:hover {
+    background-color: rgba(234, 179, 8, 0.15) !important;
+}
+
+/* 2. Mint Green */
+#floating-note.theme-green #note-bubble {
+    background-color: rgba(240, 253, 244, 0.88) !important;
+    border-color: rgba(34, 197, 94, 0.3) !important;
+}
+#floating-note.theme-green #note-bubble:before {
+    border-right-color: rgba(34, 197, 94, 0.3) !important;
+}
+#floating-note.theme-green #note-bubble:after {
+    border-right-color: rgba(240, 253, 244, 0.95) !important;
+}
+#floating-note.theme-green #note-header {
+    background-color: rgba(187, 247, 208, 0.85) !important;
+    color: #166534 !important;
+}
+#floating-note.theme-green #note-content {
+    color: #14532d !important;
+    scrollbar-color: #22c55e rgba(240, 253, 244, 0.5) !important;
+}
+#floating-note.theme-green #note-content::-webkit-scrollbar-thumb {
+    background-color: rgba(34, 197, 94, 0.6) !important;
+}
+#floating-note.theme-green #note-content::-webkit-scrollbar-track {
+    background: rgba(240, 253, 244, 0.3) !important;
+}
+#floating-note.theme-green .note-controls span {
+    color: #166534 !important;
+}
+#floating-note.theme-green .note-controls span:hover {
+    background-color: rgba(34, 197, 94, 0.15) !important;
+}
+
+/* 3. Lavender Purple */
+#floating-note.theme-purple #note-bubble {
+    background-color: rgba(250, 245, 255, 0.88) !important;
+    border-color: rgba(168, 85, 247, 0.3) !important;
+}
+#floating-note.theme-purple #note-bubble:before {
+    border-right-color: rgba(168, 85, 247, 0.3) !important;
+}
+#floating-note.theme-purple #note-bubble:after {
+    border-right-color: rgba(250, 245, 255, 0.95) !important;
+}
+#floating-note.theme-purple #note-header {
+    background-color: rgba(233, 213, 255, 0.85) !important;
+    color: #6b21a8 !important;
+}
+#floating-note.theme-purple #note-content {
+    color: #581c87 !important;
+    scrollbar-color: #a855f7 rgba(250, 245, 255, 0.5) !important;
+}
+#floating-note.theme-purple #note-content::-webkit-scrollbar-thumb {
+    background-color: rgba(168, 85, 247, 0.6) !important;
+}
+#floating-note.theme-purple #note-content::-webkit-scrollbar-track {
+    background: rgba(250, 245, 255, 0.3) !important;
+}
+#floating-note.theme-purple .note-controls span {
+    color: #6b21a8 !important;
+}
+#floating-note.theme-purple .note-controls span:hover {
+    background-color: rgba(168, 85, 247, 0.15) !important;
+}
+
+/* 4. Slate Dark */
+#floating-note.theme-dark #note-bubble {
+    background-color: rgba(15, 23, 42, 0.92) !important;
+    border-color: rgba(71, 85, 105, 0.4) !important;
+    color: #f8fafc !important;
+    box-shadow: 
+        0 10px 25px -5px rgba(0, 0, 0, 0.4), 
+        0 8px 10px -6px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+#floating-note.theme-dark #note-bubble:before {
+    border-right-color: rgba(71, 85, 105, 0.4) !important;
+}
+#floating-note.theme-dark #note-bubble:after {
+    border-right-color: rgba(15, 23, 42, 0.95) !important;
+}
+#floating-note.theme-dark #note-header {
+    background-color: rgba(30, 41, 59, 0.9) !important;
+    color: #f8fafc !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+#floating-note.theme-dark #note-content {
+    color: #f1f5f9 !important;
+    scrollbar-color: #475569 rgba(15, 23, 42, 0.5) !important;
+}
+#floating-note.theme-dark #note-content::-webkit-scrollbar-thumb {
+    background-color: rgba(71, 85, 105, 0.7) !important;
+}
+#floating-note.theme-dark #note-content::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.3) !important;
+}
+#floating-note.theme-dark .note-controls span {
+    color: #f8fafc !important;
+}
+#floating-note.theme-dark .note-controls span:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+#floating-note.theme-dark #theme-menu {
+    background: rgba(30, 41, 59, 0.98) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+#floating-note.theme-dark #note-content::placeholder {
+    color: rgba(148, 163, 184, 0.6) !important;
+}
+
+
+/* ----------------------------------------------------
+   Webkit Web Browser Scrollbar styling overrides
+---------------------------------------------------- */
 #note-content::-webkit-scrollbar {
-    width: 8px !important;
+    width: 6px !important;
 }
-
-#note-content::-webkit-scrollbar-track {
-    background: #fff5c0 !important;
-    border-radius: 4px !important;
-}
-
 #note-content::-webkit-scrollbar-thumb {
-    background-color: #e5b800 !important;
     border-radius: 4px !important;
-    border: 2px solid #fff5c0 !important;
 }
-
 #note-content::-webkit-scrollbar-thumb:hover {
-    background-color: #d4a900 !important;
-}
-
-/* Improve overall textarea experience */
-#note-content:focus {
-    box-shadow: inset 0 0 3px rgba(229, 184, 0, 0.3) !important;
+    filter: brightness(0.9) !important;
 }
